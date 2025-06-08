@@ -4,6 +4,9 @@ transformers>=4.30.0
 diffusers>=0.21.0
 accelerate>=0.20.0
 
+# Model downloading
+huggingface_hub>=0.16.0
+
 # Image processing
 Pillow>=9.5.0
 opencv-python>=4.8.0

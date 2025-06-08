@@ -7,6 +7,7 @@ import torch
 from PIL import Image
 from diffusers import StableDiffusionXLPipeline, DPMSolverMultistepScheduler
 from .utils import get_device, setup_logging
+from .download_and_load_models import ensure_all_models_downloaded, get_model_paths
 
 logger = setup_logging()
 
@@ -14,9 +15,20 @@ logger = setup_logging()
 class SDXLInferencer:
     """Stable Diffusion XL model for generating images from text prompts."""
     
-    def __init__(self, model_name: str = "stabilityai/stable-diffusion-xl-base-1.0"):
+    def __init__(self, model_name: str = None):
         """Initialize SDXL pipeline."""
         self.device = get_device()
+        
+        # Use cached model if no specific model name provided
+        if model_name is None:
+            logger.info("Using cached SDXL model...")
+            ensure_all_models_downloaded()
+            model_paths = get_model_paths()
+            model_name = model_paths['sdxl']
+            use_local = True
+        else:
+            use_local = False
+            
         logger.info(f"Loading SDXL model {model_name} on {self.device}")
         
         # Load the pipeline
@@ -24,7 +36,8 @@ class SDXLInferencer:
             model_name,
             torch_dtype=torch.float16 if self.device.type == "cuda" else torch.float32,
             use_safetensors=True,
-            variant="fp16" if self.device.type == "cuda" else None
+            variant="fp16" if self.device.type == "cuda" else None,
+            local_files_only=use_local
         )
         
         # Use DPM Solver for faster inference

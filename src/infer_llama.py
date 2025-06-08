@@ -6,6 +6,7 @@ from typing import Dict, Any, List
 import torch
 from transformers import AutoTokenizer, AutoModelForCausalLM, GenerationConfig
 from .utils import get_device, setup_logging
+from .download_and_load_models import ensure_all_models_downloaded, get_model_paths
 
 logger = setup_logging()
 
@@ -13,16 +14,28 @@ logger = setup_logging()
 class LlamaInferencer:
     """LLaMA model for generating story text from image attributes."""
     
-    def __init__(self, model_name: str = "meta-llama/Llama-2-7b-chat-hf"):
+    def __init__(self, model_name: str = None):
         """Initialize LLaMA model and tokenizer."""
         self.device = get_device()
+        
+        # Use cached model if no specific model name provided
+        if model_name is None:
+            logger.info("Using cached LLaMA model...")
+            ensure_all_models_downloaded()
+            model_paths = get_model_paths()
+            model_name = model_paths['llama']
+            use_local = True
+        else:
+            use_local = False
+            
         logger.info(f"Loading LLaMA model {model_name} on {self.device}")
         
-        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name, local_files_only=use_local)
         self.model = AutoModelForCausalLM.from_pretrained(
             model_name,
             torch_dtype=torch.float16 if self.device.type == "cuda" else torch.float32,
-            device_map="auto" if self.device.type == "cuda" else None
+            device_map="auto" if self.device.type == "cuda" else None,
+            local_files_only=use_local
         )
         
         # Add padding token if not present

@@ -14,6 +14,7 @@ from .infer_blip import BLIPInferencer
 from .infer_llama import LlamaInferencer
 from .infer_sdxl import SDXLInferencer
 from .utils import load_image, save_results, setup_logging, validate_inputs
+from .download_and_load_models import ensure_all_models_downloaded
 
 logger = setup_logging()
 
@@ -23,9 +24,10 @@ class StoryweaverPipeline:
     
     def __init__(
         self,
-        blip_model: str = "Salesforce/blip-image-captioning-base",
-        llama_model: str = "meta-llama/Llama-2-7b-chat-hf",
-        sdxl_model: str = "stabilityai/stable-diffusion-xl-base-1.0",
+        use_cached_models: bool = True,
+        blip_model: str = None,
+        llama_model: str = None,
+        sdxl_model: str = None,
         mlflow_experiment: str = "storyweaver"
     ):
         """Initialize the pipeline with model configurations."""
@@ -36,7 +38,12 @@ class StoryweaverPipeline:
         
         logger.info("Initializing Storyweaver Pipeline...")
         
-        # Initialize models
+        # Ensure models are downloaded if using cached models
+        if use_cached_models:
+            logger.info("Ensuring all models are downloaded and cached...")
+            ensure_all_models_downloaded()
+        
+        # Initialize models (will use cached versions if model paths are None)
         self.blip = BLIPInferencer(blip_model)
         self.llama = LlamaInferencer(llama_model)
         self.sdxl = SDXLInferencer(sdxl_model)
